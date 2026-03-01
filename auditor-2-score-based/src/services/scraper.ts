@@ -20,10 +20,21 @@ export class ScraperService {
         };
 
 
+        let skipCount = 0;
+
         const rewriter = new HTMLRewriter()
+            .on("style, script", {
+                element(el) {
+                    skipCount++;
+                    el.onEndTag(() => {
+                        skipCount--;
+                    });
+                }
+            })
             // Headings
             .on("h1, h2, h3", {
                 text(text) {
+                    if (skipCount > 0) return;
                     if (!this.headingText) this.headingText = "";
                     this.headingText += text.text;
                     if (text.lastInTextNode) {
@@ -36,6 +47,7 @@ export class ScraperService {
             // CTAs - buttons, links with cta class, or signup/demo keywords
             .on('button, a[class*="cta"], a[class*="button"], a[href*="signup"], a[href*="demo"]', {
                 text(text) {
+                    if (skipCount > 0) return;
                     if (!this.ctaText) this.ctaText = "";
                     this.ctaText += text.text;
                     if (text.lastInTextNode) {
@@ -48,6 +60,7 @@ export class ScraperService {
             // Hero sections - heuristic based on classes
             .on('section[class*="hero"], div[class*="hero"], header', {
                 text(text) {
+                    if (skipCount > 0) return;
                     if (!this.heroText) this.heroText = "";
                     this.heroText += text.text;
                     if (text.lastInTextNode) {
@@ -62,6 +75,7 @@ export class ScraperService {
             // Testimonials - heuristic based on classes
             .on('[class*="testimonial"], blockquote, [class*="social-proof"]', {
                 text(text) {
+                    if (skipCount > 0) return;
                     if (!this.testimonialText) this.testimonialText = "";
                     this.testimonialText += text.text;
                     if (text.lastInTextNode) {

@@ -1,18 +1,18 @@
-export interface Citation {
-    sentence: string;
-    type: "good" | "bad" | "passive";
-    explanation: string;
+export interface CategoryDetail {
+    score: number;
+    reasoning: string;
+    examples: { text: string; label: string }[];
 }
 
 export interface AuditScores {
-    positioning: number;
-    value: number;
-    icp: number;
-    clarity: number;
-    proof: number;
-    cta: number;
+    positioning: CategoryDetail;
+    value: CategoryDetail;
+    icp: CategoryDetail;
+    clarity: CategoryDetail;
+    proof: CategoryDetail;
+    cta: CategoryDetail;
     verdict: string;
-    citations: Citation[];
+    isError?: boolean;
 }
 
 export interface ImprovementFix {
@@ -51,27 +51,23 @@ export class AIService {
       5. Proof: Is there sufficient social proof or data?
       6. CTA: Are call-to-actions compelling and clear?
 
-      CITATIONS:
-      Identify 4-6 specific sentences from the content above and categorize them:
-      - "good": Compelling, clear, benefit-driven.
-      - "bad": Vague, feature-heavy, or jargon-filled.
-      - "passive": Lacks urgency, tone-deaf, or indirect.
+      For EACH category, provide:
+      - A score (1-5)
+      - A concise reasoning (1-2 sentences) explaining the score based on the content.
+      - 1-2 specific "examples" (quotes) from the site that support this reasoning, with a short label (e.g., "Hero headline", "Main CTA").
 
       VERDICT:
-      Provide a one-sentence "verdict" summarizing the psychological impact of the messaging (e.g., "Major psychological friction detected; scaling now would waste 40-60% of ad spend.").
+      Provide a one-sentence "verdict" summarizing the psychological impact.
 
-      Provide ONLY a raw JSON response in this format. Ensure all quotes inside strings are escaped with backslashes.
+      Provide ONLY a raw JSON response in this format:
       {
-        "positioning": number,
-        "value": number,
-        "icp": number,
-        "clarity": number,
-        "proof": number,
-        "cta": number,
-        "verdict": "string",
-        "citations": [
-          {"sentence": "string", "type": "good" | "bad" | "passive", "explanation": "string"}
-        ]
+        "positioning": { "score": number, "reasoning": "string", "examples": [{"text": "string", "label": "string"}] },
+        "value": { "score": number, "reasoning": "string", "examples": [{"text": "string", "label": "string"}] },
+        "icp": { "score": number, "reasoning": "string", "examples": [{"text": "string", "label": "string"}] },
+        "clarity": { "score": number, "reasoning": "string", "examples": [{"text": "string", "label": "string"}] },
+        "proof": { "score": number, "reasoning": "string", "examples": [{"text": "string", "label": "string"}] },
+        "cta": { "score": number, "reasoning": "string", "examples": [{"text": "string", "label": "string"}] },
+        "verdict": "string"
       }
     `;
 
@@ -92,7 +88,22 @@ export class AIService {
             };
         } catch (error) {
             console.error("AI Audit Error:", error);
-            throw new Error("Failed to audit content with AI: " + (error as any).message);
+            // Graceful fallback for upstream errors (e.g. Cloudflare error 1031)
+            const fallback: AuditScores = {
+                positioning: { score: 0, reasoning: "Incomplete: AI unavailable.", examples: [] },
+                value: { score: 0, reasoning: "Incomplete: AI unavailable.", examples: [] },
+                icp: { score: 0, reasoning: "Incomplete: AI unavailable.", examples: [] },
+                clarity: { score: 0, reasoning: "Incomplete: AI unavailable.", examples: [] },
+                proof: { score: 0, reasoning: "Incomplete: AI unavailable.", examples: [] },
+                cta: { score: 0, reasoning: "Incomplete: AI unavailable.", examples: [] },
+                verdict: "THUNDERCLAP ENGINE OFFLINE (Error 1031): The AI model is currently overloaded. We cannot provide an accurate Messaging Score at this moment. Please try again in 5-10 minutes.",
+                isError: true
+            };
+            return {
+                data: fallback,
+                prompt,
+                response: "Fallback used due to AI error: " + (error as any).message,
+            };
         }
     }
 

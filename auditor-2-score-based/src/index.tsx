@@ -28,9 +28,17 @@ app.post("/audit", async (c) => {
 	const auditService = new AuditService();
 	try {
 		const result = await auditService.performAudit(url, c.env);
+
+		if (c.req.header("Accept")?.includes("application/json")) {
+			return c.json({ redirect: `/report/${result.id}` });
+		}
+
 		return c.redirect(`/report/${result.id}`);
 	} catch (e: any) {
 		console.error("Audit failed:", e);
+		if (c.req.header("Accept")?.includes("application/json")) {
+			return c.json({ error: e.message }, 500);
+		}
 		return c.text("Audit failed: " + e.message, 500);
 	}
 });

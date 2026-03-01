@@ -17,31 +17,119 @@ export const UserUI = {
             .replace(/&lsquo;/g, "'");
     },
 
+    SkeletonReport: () => {
+        return (
+            <div id="skeleton-report" class="hidden max-w-5xl mx-auto px-6 py-16 animate-pulse">
+                {/* Header Skeleton */}
+                <div class="mb-16 pb-12 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="h-6 w-24 bg-gray-200 rounded-full"></div>
+                            <div class="text-gray-300">/</div>
+                            <div class="h-4 w-32 bg-gray-100 rounded"></div>
+                        </div>
+                        <div class="h-20 w-3/4 bg-gray-200 rounded-2xl mb-4"></div>
+                        <div class="h-6 w-1/2 bg-gray-100 rounded"></div>
+                    </div>
+                    <div class="w-80 h-48 bg-gray-900 rounded-[2.5rem]"></div>
+                </div>
+
+                {/* Grid Skeleton */}
+                <div class="mb-20 grid grid-cols-2 lg:grid-cols-6 gap-4">
+                    {[1, 2, 3, 4, 5, 6].map(() => (
+                        <div class="bg-white p-6 rounded-2xl border border-gray-100 flex flex-col items-center">
+                            <div class="h-3 w-12 bg-gray-100 rounded mb-4"></div>
+                            <div class="h-10 w-8 bg-gray-200 rounded mb-4"></div>
+                            <div class="w-full bg-gray-50 h-1 rounded-full"></div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Detailed Breakdown Skeleton */}
+                <div class="space-y-8">
+                    <div class="h-10 w-64 bg-gray-200 rounded mb-12"></div>
+                    {[1, 2].map(() => (
+                        <div class="bg-white rounded-[2rem] border-2 border-gray-100 p-8">
+                            <div class="flex justify-between items-center mb-6">
+                                <div class="h-8 w-48 bg-gray-200 rounded"></div>
+                                <div class="h-8 w-16 bg-gray-100 rounded-full"></div>
+                            </div>
+                            <div class="w-full bg-gray-100 h-2 rounded-full mb-8"></div>
+                            <div class="h-4 w-full bg-gray-100 rounded mb-2"></div>
+                            <div class="h-4 w-5/6 bg-gray-100 rounded mb-8"></div>
+                            <div class="space-y-4">
+                                <div class="h-20 w-full bg-gray-50 rounded-2xl"></div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div class="mt-12 text-center">
+                    <p class="text-blue-600 font-bold animate-bounce">Analyzing messaging psychology... This usually takes 30-45 seconds.</p>
+                </div>
+            </div>
+        );
+    },
+
     landing: (c: Context) => {
         return c.html(
             <Layout title="Thunderclap Auditor">
-                <div class="max-w-4xl mx-auto px-4 py-20 flex flex-col items-center justify-center">
+                <div id="landing-content" class="max-w-4xl mx-auto px-4 py-20 flex flex-col items-center justify-center">
                     <div class="text-center mb-12">
                         <h1 class="text-5xl font-extrabold text-gray-900 mb-4 tracking-tight">Audit Your Messaging</h1>
                         <p class="text-xl text-gray-600 max-w-2xl">Get a repeatable, explainable Messaging Score and prioritized fixes for your landing page.</p>
                     </div>
 
-                    <form action="/audit" method="post" class="w-full max-w-lg bg-white p-8 rounded-2xl shadow-xl border border-gray-100 h-64 flex flex-col justify-between">
+                    <form id="audit-form" action="/audit" method="post" class="w-full max-w-lg bg-white p-8 rounded-2xl shadow-xl border border-gray-100 h-64 flex flex-col justify-between">
                         <div>
                             <label for="url" class="block text-sm font-semibold text-gray-700 mb-2">Website URL</label>
                             <input type="url" id="url" name="url" placeholder="https://yourwebsite.com" required
                                 class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none" />
                         </div>
-                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-colors shadow-lg shadow-blue-200">
+                        <button type="submit" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-colors shadow-lg shadow-blue-200">
                             Run Audit
                         </button>
                     </form>
-
-                    <div id="loading" class="hidden mt-8 w-full max-w-lg text-center">
-                        <div class="shimmer h-8 w-48 mx-auto rounded-lg mb-4"></div>
-                        <p class="text-gray-500 animate-pulse">Analyzing landing page psychology...</p>
-                    </div>
                 </div>
+
+                {UserUI.SkeletonReport()}
+
+                <script dangerouslySetInnerHTML={{
+                    __html: `
+                    document.getElementById('audit-form').addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const form = e.target;
+                        const btn = document.getElementById('submit-btn');
+                        const url = form.action;
+                        const formData = new FormData(form);
+
+                        // UI Transition
+                        document.getElementById('landing-content').classList.add('hidden');
+                        document.getElementById('skeleton-report').classList.remove('hidden');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                        try {
+                            const response = await fetch(url, {
+                                method: 'POST',
+                                body: formData,
+                                headers: { 'Accept': 'application/json' }
+                            });
+                            
+                            if (response.ok) {
+                                const result = await response.json();
+                                if (result.redirect) {
+                                    window.location.href = result.redirect;
+                                    return;
+                                }
+                            }
+                            throw new Error('Audit failed');
+                        } catch (err) {
+                            console.error(err);
+                            alert('Audit failed. Please try again.');
+                            window.location.reload();
+                        }
+                    });
+                ` }} />
             </Layout>
         );
     },
@@ -56,12 +144,17 @@ export const UserUI = {
         const scores = JSON.parse(report.section_scores);
         const fixes = JSON.parse(report.prioritized_fixes);
         const evidence = JSON.parse(report.evidence);
-        const citations = scores.citations || [];
 
-        // Remove citations and verdict from scores for the grid display
-        const displayScores = { ...scores };
-        delete displayScores.citations;
-        delete displayScores.verdict;
+        const categoryLabels: Record<string, string> = {
+            positioning: "Positioning",
+            value: "Value Proposition",
+            icp: "Audience Alignment",
+            clarity: "Messaging Clarity",
+            proof: "Proof & Credibility",
+            cta: "Call to Action"
+        };
+
+        const isError = scores.isError === true;
 
         return c.html(
             <Layout title={`Audit Report: ${report.url}`}>
@@ -70,20 +163,26 @@ export const UserUI = {
                     <div class="mb-16 pb-12 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-8">
                         <div class="flex-1">
                             <div class="flex items-center gap-3 mb-4">
-                                <span class="px-3 py-1 bg-blue-50 text-blue-700 text-[10px] font-black uppercase tracking-[0.2em] rounded-full border border-blue-100">Audit Complete</span>
+                                <span class={`px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] rounded-full border ${isError ? 'bg-red-50 text-red-700 border-red-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
+                                    {isError ? 'Audit Suspended' : 'Audit Complete'}
+                                </span>
                                 <span class="text-gray-300">/</span>
                                 <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">{new URL(report.url).hostname}</span>
                             </div>
                             <h1 class="text-7xl font-black text-gray-900 mb-4 tracking-tighter leading-none ">
-                                Messaging <span class="text-blue-600 italic"> Score :</span>  <span class="text-blue-600">{report.messaging_score}</span>
+                                Messaging <span class="text-blue-600 italic"> {isError ? 'Report' : 'Score :'}</span>  {!isError && <span class="text-blue-600">{report.messaging_score}</span>}
                             </h1>
 
-                            <p class="text-lg text-gray-500 font-medium">Historical audit comparison: <span class="text-gray-900 font-bold">-{100 - report.messaging_score}% from perfection</span></p>
+                            {!isError && (
+                                <p class="text-lg text-gray-500 font-medium">Historical audit comparison: <span class="text-gray-900 font-bold">-{100 - report.messaging_score}% from perfection</span></p>
+                            )}
                         </div>
-                        <div class="max-w-1/2 bg-gray-900 text-white p-8 rounded-[2.5rem] shadow-2xl shadow-gray-200 min-w-[300px] transform hover:scale-105 transition-transform">
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">The Verdict</p>
-                            <h2 class="text-3xl font-black mb-2">{report.messaging_score > 70 ? "Ready to Scale" : "Optimization Required"}</h2>
-                            <p class="text-sm text-gray-400 font-medium leading-relaxed">
+                        <div class={`max-w-1/2 p-8 rounded-[2.5rem] shadow-2xl min-w-[300px] transform hover:scale-105 transition-transform ${isError ? 'bg-red-600 text-white shadow-red-200' : 'bg-gray-900 text-white shadow-gray-200'}`}>
+                            <p class={`text-[10px] font-black uppercase tracking-[0.2em] mb-4 ${isError ? 'text-white/80' : 'text-gray-400'}`}>
+                                {isError ? 'Critical Status' : 'The Verdict'}
+                            </p>
+                            <h2 class="text-3xl font-black mb-2">{isError ? 'AI Unavailable' : (report.messaging_score > 70 ? "Ready to Scale" : "Optimization Required")}</h2>
+                            <p class={`text-sm font-medium leading-relaxed ${isError ? 'text-white' : 'text-gray-400'}`}>
                                 {scores.verdict || (report.messaging_score > 70
                                     ? "Your core messaging is strong enough to support paid traffic at scale. Focus on minor edge cases."
                                     : "Major psychological friction detected. Scaling now would waste 40-60% of your ad spend.")}
@@ -91,53 +190,83 @@ export const UserUI = {
                         </div>
                     </div>
 
-                    {/* Psychological Breakdown (Citations) */}
-                    {citations.length > 0 && (
-                        <div class="mb-20">
-                            <div class="flex items-center gap-4 mb-10">
-                                <h2 class="text-3xl font-black text-gray-900 tracking-tight">Psychological <span class="text-blue-600 underline decoration-8 underline-offset-4 decoration-blue-100">Deep-Dive</span></h2>
-                                <div class="h-px flex-1 bg-gray-100 ml-4"></div>
-                            </div>
-
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                {citations.map((cite: any) => (
-                                    <div class={`p-8 rounded-[2rem] border-2 transition-all hover:shadow-lg ${cite.type === 'good' ? 'bg-green-50/50 border-green-100' :
-                                        cite.type === 'bad' ? 'bg-red-50/50 border-red-100' : 'bg-orange-50/50 border-orange-100'
-                                        }`}>
-                                        <div class="flex items-center gap-3 mb-4">
-                                            <span class={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${cite.type === 'good' ? 'bg-green-600 text-white' :
-                                                cite.type === 'bad' ? 'bg-red-600 text-white' : 'bg-orange-600 text-white'
-                                                }`}>
-                                                {cite.type}
-                                            </span>
-                                            <div class="h-px flex-1 bg-black/5"></div>
-                                        </div>
-                                        <p class="text-xl font-bold italic text-gray-900 mb-4 leading-tight">"{UserUI.decodeHTMLEntities(cite.sentence)}"</p>
-                                        <div class="flex gap-4">
-                                            <div class={`w-1 h-auto rounded-full ${cite.type === 'good' ? 'bg-green-200' : cite.type === 'bad' ? 'bg-red-200' : 'bg-orange-200'}`}></div>
-                                            <p class="text-sm text-gray-600 font-medium leading-relaxed">{UserUI.decodeHTMLEntities(cite.explanation)}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Scoring Metrics */}
-                    <div class="mb-20">
-                        <h2 class="text-xs font-black text-gray-400 uppercase tracking-[0.3em] mb-10 text-center">Rigid Audit Metrics</h2>
-                        <div class="grid grid-cols-2 lg:grid-cols-6 gap-6">
-                            {Object.entries(displayScores).map(([key, value]) => (
-                                <div class="bg-white p-8 rounded-3xl border border-gray-100 text-center shadow-sm hover:border-blue-600 transition-colors group">
-                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 group-hover:text-blue-600 transition-colors font-bold">{key}</p>
-                                    <p class="text-4xl font-black text-gray-900 group-hover:scale-110 transition-transform">{Number(value)}<span class="text-xs text-gray-300 font-bold">/5</span></p>
-                                    <div class="w-full bg-gray-50 h-1.5 rounded-full mt-6 overflow-hidden">
-                                        <div class={`h-full ${Number(value) > 3 ? 'bg-green-500' : 'bg-orange-500'}`} style={`width: ${Number(value) * 20}%`}></div>
-                                    </div>
+                    {!isError && (
+                        <>
+                            {/* Quick Score Grid */}
+                            <div class="mb-20">
+                                <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
+                                    {Object.entries(categoryLabels).map(([key, label]) => {
+                                        const data = scores[key];
+                                        const value = typeof data === 'object' ? data.score : data;
+                                        return (
+                                            <div class="bg-white p-6 rounded-2xl border border-gray-100 text-center shadow-sm hover:border-blue-600 transition-colors group">
+                                                <p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2 group-hover:text-blue-600 transition-colors">{label}</p>
+                                                <p class="text-2xl font-black text-gray-900 group-hover:scale-110 transition-transform">{Number(value)}<span class="text-[10px] text-gray-300 font-bold">/5</span></p>
+                                                <div class="w-full bg-gray-50 h-1 rounded-full mt-4 overflow-hidden">
+                                                    <div class={`h-full ${Number(value) > 3 ? 'bg-green-500' : 'bg-orange-500'}`} style={`width: ${Number(value) * 20}%`}></div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                            ))}
-                        </div>
-                    </div>
+                            </div>
+
+                            {/* How we evaluated your score */}
+                            <div class="mb-20">
+                                <div class="flex flex-col mb-12">
+                                    <h2 class="text-4xl font-black text-gray-900 tracking-tight mb-2">How we evaluated your <span class="text-blue-600 underline decoration-8 underline-offset-4 decoration-blue-100">score</span></h2>
+                                    <p class="text-gray-500 font-medium">Detailed breakdown of each category based on real copy from your site.</p>
+                                </div>
+
+                                <div class="space-y-8">
+                                    {Object.entries(categoryLabels).map(([key, label]) => {
+                                        const data = scores[key];
+                                        if (!data || typeof data !== 'object') return null;
+                                        const percentage = data.score * 20;
+
+                                        return (
+                                            <div class="bg-white rounded-[2rem] border-2 border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                                <div class="p-8">
+                                                    <div class="flex justify-between items-center mb-6">
+                                                        <h3 class="text-2xl font-black text-gray-900">{label}</h3>
+                                                        <div class="flex items-center gap-3">
+                                                            <span class="text-2xl font-black text-gray-900">{percentage}%</span>
+                                                            <span class={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${data.score >= 4 ? 'bg-green-100 text-green-700' : data.score >= 3 ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>
+                                                                {data.score >= 4 ? 'Good' : data.score >= 3 ? 'Moderate' : 'Poor'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="w-full bg-gray-100 h-2 rounded-full mb-8 overflow-hidden">
+                                                        <div class={`h-full transition-all duration-1000 ${data.score >= 4 ? 'bg-green-500' : data.score >= 3 ? 'bg-orange-500' : 'bg-red-500'}`} style={`width: ${percentage}%`}></div>
+                                                    </div>
+
+                                                    <p class="text-lg text-gray-700 font-medium leading-relaxed mb-8">
+                                                        {UserUI.decodeHTMLEntities(data.reasoning)}
+                                                    </p>
+
+                                                    {data.examples && data.examples.length > 0 && (
+                                                        <div class="space-y-4">
+                                                            <p class="text-xs font-black text-gray-400 uppercase tracking-widest">Examples from your site:</p>
+                                                            {data.examples.map((ex: any) => (
+                                                                <div class="bg-gray-50/50 rounded-2xl p-6 border border-gray-100">
+                                                                    <p class="text-gray-900 font-bold italic mb-2">"{UserUI.decodeHTMLEntities(ex.text)}"</p>
+                                                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">{ex.label}</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div class="bg-gray-50 flex justify-end px-8 py-3 border-t border-gray-100">
+                                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Contributes ~16% to overall score</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </>
+                    )}
 
                     {/* Execution Roadmap */}
                     <div class="mb-20">

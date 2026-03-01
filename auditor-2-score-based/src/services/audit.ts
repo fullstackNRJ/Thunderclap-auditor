@@ -57,7 +57,9 @@ export class AuditService {
         return result;
     }
 
-    private calculateMessagingScore(scores: AuditScores): number {
+    private calculateMessagingScore(scores: AuditScores): number | null {
+        if (scores.isError) return null;
+
         // User's suggested rigid logic expanded for all 6 metrics
         // We'll normalize 1-5 scores to 0-100 based on weights
         const weights = {
@@ -72,12 +74,12 @@ export class AuditService {
         const maxRating = 5;
 
         const weightedSum =
-            (scores.positioning / maxRating) * weights.positioning +
-            (scores.value / maxRating) * weights.value +
-            (scores.icp / maxRating) * weights.icp +
-            (scores.clarity / maxRating) * weights.clarity +
-            (scores.proof / maxRating) * weights.proof +
-            (scores.cta / maxRating) * weights.cta;
+            (scores.positioning.score / maxRating) * weights.positioning +
+            (scores.value.score / maxRating) * weights.value +
+            (scores.icp.score / maxRating) * weights.icp +
+            (scores.clarity.score / maxRating) * weights.clarity +
+            (scores.proof.score / maxRating) * weights.proof +
+            (scores.cta.score / maxRating) * weights.cta;
 
         return Math.round(weightedSum);
     }
