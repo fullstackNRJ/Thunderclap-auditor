@@ -15,7 +15,7 @@ type Bindings = {
 const app = new Hono<{ Bindings: Bindings }>();
 
 // Auth Middleware
-app.use("/admin/*", AuthService.middleware);
+app.use("/admin*", AuthService.middleware);
 
 // User UI Routes
 app.get("/", (c) => UserUI.landing(c));

@@ -1,25 +1,48 @@
-# Cloudflare Workers OpenAPI 3.1
+# Thunderclap: AI-Powered Landing Page Auditor
 
-This is a Cloudflare Worker with OpenAPI 3.1 using [chanfana](https://github.com/cloudflare/chanfana) and [Hono](https://github.com/honojs/hono).
+Thunderclap is an intelligent tool designed to bridge the gap between "good design" and "effective messaging." It scans landing pages to evaluate how well they communicate value to their target audience.
 
-This is an example project made to be used as a quick start into building OpenAPI compliant Workers that generates the
-`openapi.json` schema automatically from code and validates the incoming request to the defined parameters or request body.
+---
 
-## Get started
+## 🎯 For My Marketing Friends (The "Why")
 
-1. Sign up for [Cloudflare Workers](https://workers.dev). The free tier is more than enough for most use cases.
-2. Clone this project and install dependencies with `npm install`
-3. Run `wrangler login` to login to your Cloudflare account in wrangler
-4. Run `wrangler deploy` to publish the API to Cloudflare Workers
+Ever wonder if your landing page is actually *saying* what you think it is? Thunderclap is your 24/7 automated marketing auditor. 
 
-## Project structure
+### What it does:
+1.  **Scans Your Page**: It reads your headlines, hero sections, CTAs, and testimonials.
+2.  **Grades Your Messaging**: It uses **Artificial Intelligence (LLMs)** to grade your page on 6 critical pillars: *Positioning, Value, ICP (Ideal Customer Profile) Clarity, Message Clarity, Social Proof, and Call-to-Action strength.*
+3.  **Provides Real Evidence**: It points to specific sentences on your page and tags them as "Good," "Bad," or "Passive."
+4.  **Gives You a To-Do List**: The AI doesn't just critique; it acts as a consultant, suggesting 3 prioritized fixes to improve your conversion rate immediately.
 
-1. Your main router is defined in `src/index.ts`.
-2. Each endpoint has its own file in `src/endpoints/`.
-3. For more information read the [chanfana documentation](https://chanfana.pages.dev/) and [Hono documentation](https://hono.dev/docs).
+**The Magic:** We leverage the same technology behind ChatGPT (Large Language Models) but train it specifically to think like a conversion copywriter and marketing strategist.
 
-## Development
+---
 
-1. Run `wrangler dev` to start a local instance of the API.
-2. Open `http://localhost:8787/` in your browser to see the Swagger interface where you can try the endpoints.
-3. Changes made in the `src/` folder will automatically trigger the server to reload, you only need to refresh the Swagger interface.
+## 🛠️ Technical Overview (The "How")
+
+Thunderclap is a high-performance, edge-computing application built on the Cloudflare stack.
+
+### The Tech Stack:
+-   **Framework**: [Hono](https://hono.dev/) & [chanfana](https://github.com/cloudflare/chanfana) (OpenAPI 3.1 compliance).
+-   **Runtime**: [Cloudflare Workers](https://workers.cloudflare.com/) (Serverless at the edge).
+-   **Scraping**: High-speed stream processing using Cloudflare's native `HTMLRewriter`.
+-   **AI Engine (Workers AI)**:
+    -   **Llama 3 (8B Instruct)**: Orchestrates the primary audit, identifying citations and calculating categorical scores.
+    -   **Mistral (7B Instruct)**: Processes the audit scores and source content to generate actionable improvement suggestions.
+-   **Persistence**: [Cloudflare D1](https://developers.cloudflare.com/d1/) (Edge SQL database) for storing report history and AI audit logs.
+
+### Key Engineering Features:
+-   **Robust JSON Sanitization**: Custom logic to handle AI "hallucinations" or formatting issues (trailing commas, unescaped characters).
+-   **Observability**: Integrated logging of LLM prompts and raw responses for continuous prompt engineering and debugging.
+-   **Edge Performance**: Zero-cold-start execution with sub-second analysis (scooter-speed scraping + parallel AI inference).
+
+---
+
+## 🚀 Getting Started
+
+1.  **Clone & Install**: `pnpm install`
+2.  **Login**: `wrangler login`
+3.  **Local Dev**: `pnpm run start`
+4.  **Deploy**: `wrangler deploy`
+
+Open `http://localhost:8787/` to access the audit interface or API documentation.

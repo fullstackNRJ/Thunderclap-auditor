@@ -19,56 +19,58 @@ export class ScraperService {
             ctas: [],
         };
 
-        // We use a temporary buffer to accumulate text content for elements
-        let currentText = "";
 
         const rewriter = new HTMLRewriter()
             // Headings
             .on("h1, h2, h3", {
                 text(text) {
-                    currentText += text.text;
+                    if (!this.headingText) this.headingText = "";
+                    this.headingText += text.text;
                     if (text.lastInTextNode) {
-                        const content = currentText.trim();
+                        const content = this.headingText.trim();
                         if (content) result.headings.push(content);
-                        currentText = "";
+                        this.headingText = "";
                     }
                 },
-            })
+            } as any)
             // CTAs - buttons, links with cta class, or signup/demo keywords
             .on('button, a[class*="cta"], a[class*="button"], a[href*="signup"], a[href*="demo"]', {
                 text(text) {
-                    currentText += text.text;
+                    if (!this.ctaText) this.ctaText = "";
+                    this.ctaText += text.text;
                     if (text.lastInTextNode) {
-                        const content = currentText.trim();
+                        const content = this.ctaText.trim();
                         if (content) result.ctas.push(content);
-                        currentText = "";
+                        this.ctaText = "";
                     }
                 },
-            })
+            } as any)
             // Hero sections - heuristic based on classes
             .on('section[class*="hero"], div[class*="hero"], header', {
                 text(text) {
-                    currentText += text.text;
+                    if (!this.heroText) this.heroText = "";
+                    this.heroText += text.text;
                     if (text.lastInTextNode) {
-                        const content = currentText.trim();
+                        const content = this.heroText.trim();
                         if (!result.hero && content.length > 20) {
                             result.hero = content;
                         }
-                        currentText = "";
+                        this.heroText = "";
                     }
                 },
-            })
+            } as any)
             // Testimonials - heuristic based on classes
             .on('[class*="testimonial"], blockquote, [class*="social-proof"]', {
                 text(text) {
-                    currentText += text.text;
+                    if (!this.testimonialText) this.testimonialText = "";
+                    this.testimonialText += text.text;
                     if (text.lastInTextNode) {
-                        const content = currentText.trim();
+                        const content = this.testimonialText.trim();
                         if (content) result.testimonials.push(content);
-                        currentText = "";
+                        this.testimonialText = "";
                     }
                 },
-            });
+            } as any);
 
         // Transform doesn't return the result directly; it processes the stream. 
         // We need to consume the response body for the handlers to run.
