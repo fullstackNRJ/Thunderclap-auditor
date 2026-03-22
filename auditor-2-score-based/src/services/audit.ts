@@ -1,6 +1,7 @@
 import { ScraperService, ScrapedContent } from "./scraper";
 import { AIService, AuditScores, ImprovementFix } from "./ai";
 import { DatabaseService } from "./db";
+import { ScreenshotService } from "./screenshot";
 
 export interface FullAuditResult {
     id: string;
@@ -13,38 +14,59 @@ export interface FullAuditResult {
 
 export class AuditService {
     private scraper = new ScraperService();
+    private screenshot = new ScreenshotService();
 
-    async performAudit(url: string, env: any): Promise<FullAuditResult> {
+    async performAudit(url: string, env: Env): Promise<FullAuditResult> {
         const ai = new AIService(env.AI);
         const db = new DatabaseService(env.DB);
         const id = crypto.randomUUID();
 
-        // 1. Scrape content
-        const content = await this.scraper.scrape(url);
+        // 1. Scrape content & Capture Screenshot in parallel
+        const [content, screenshot] = await Promise.all([
+            this.scraper.scrape(url),
+            this.screenshot.capture(url, env.BROWSER).catch(err => {
+                console.error("Screenshot capture failed:", err);
+                return "";
+            })
+        ]);
 
-        // 2. Audit with AI 1 (LLaMA-3)
+        // 2. Audit with Text AI
         const auditResult = await ai.auditContent(content);
 
-        // 3. Scoring Logic (0-100)
-        const messagingScore = this.calculateMessagingScore(auditResult.data);
+        // 3. Vision Analysis if screenshot available
+        let visionResult = null;
+        if (screenshot) {
+            visionResult = await ai.auditVision(screenshot, content);
+            // Merge vision critique into relevant categories if possible
+            if (visionResult && visionResult.visual_critique) {
+                auditResult.data.verdict += ` | Visual Insight: ${visionResult.visual_critique}`;
+            }
+        }
 
-        // 4. Improvements with AI 2 (Mistral)
+        // 4. Scoring Logic (0-100)
+        let messagingScore = this.calculateMessagingScore(auditResult.data);
+        if (messagingScore !== null && visionResult && visionResult.visual_score) {
+            // Blend vision score (30% weight)
+            messagingScore = Math.round((messagingScore * 0.7) + (visionResult.visual_score * 0.3));
+        }
+
+        // 5. Improvements with AI 2
         const improvementsResult = await ai.suggestImprovements(content, auditResult.data);
 
         const result: FullAuditResult = {
             id,
             url,
-            messagingScore,
+            messagingScore: messagingScore || 0,
             sectionScores: auditResult.data,
             evidence: content,
             prioritizedFixes: improvementsResult.data,
         };
 
-        // 5. Save to Database
+        // 6. Save to Database
         await db.saveAuditReport({
             id,
             url,
-            messaging_score: messagingScore,
+            messaging_score: result.messagingScore,
             section_scores: JSON.stringify(auditResult.data),
             evidence: JSON.stringify(content),
             ai1_prompt: auditResult.prompt,
@@ -52,6 +74,7 @@ export class AuditService {
             ai2_prompt: improvementsResult.prompt,
             ai2_response: improvementsResult.response,
             prioritized_fixes: JSON.stringify(improvementsResult.data),
+            screenshot: screenshot
         });
 
         return result;

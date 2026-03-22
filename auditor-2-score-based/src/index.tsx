@@ -9,6 +9,7 @@ import { AuditService } from "./services/audit";
 type Bindings = {
 	DB: D1Database;
 	AI: any;
+	BROWSER: any;
 	ADMIN_PASSWORD?: string;
 };
 

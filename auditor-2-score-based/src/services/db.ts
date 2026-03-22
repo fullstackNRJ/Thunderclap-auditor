@@ -16,12 +16,14 @@ export class DatabaseService {
         ai2_prompt?: string;
         ai2_response?: string;
         prioritized_fixes: string;
+        screenshot?: string;
     }) {
         return this.db.prepare(`
       INSERT INTO audit_reports (
         id, url, messaging_score, section_scores, evidence, 
-        ai1_prompt, ai1_response, ai2_prompt, ai2_response, prioritized_fixes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ai1_prompt, ai1_response, ai2_prompt, ai2_response, prioritized_fixes,
+        screenshot
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
             report.id,
             report.url,
@@ -32,7 +34,8 @@ export class DatabaseService {
             report.ai1_response,
             report.ai2_prompt,
             report.ai2_response,
-            report.prioritized_fixes
+            report.prioritized_fixes,
+            report.screenshot
         ).run();
     }
 

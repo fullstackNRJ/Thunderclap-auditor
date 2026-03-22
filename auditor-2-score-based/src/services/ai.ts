@@ -2,6 +2,7 @@ export interface CategoryDetail {
     score: number;
     reasoning: string;
     examples: { text: string; label: string }[];
+    visual_critique?: string;
 }
 
 export interface AuditScores {
@@ -103,6 +104,58 @@ export class AIService {
                 data: fallback,
                 prompt,
                 response: "Fallback used due to AI error: " + (error as any).message,
+            };
+        }
+    }
+
+    async auditVision(screenshotBase64: string, textContent: any): Promise<any> {
+        const model = "@cf/meta/llama-3.2-11b-vision-instruct";
+
+        const prompt = `
+        You are a World-Class B2B Conversion Optimizer. 
+        Analyze this screenshot of the landing page at ${textContent.url} alongside its extracted text.
+        
+        **Text Summary:**
+        Hero: ${textContent.hero}
+        CTAs: ${textContent.ctas?.join(", ")}
+        
+        **Your Task:**
+        1. Evaluate the Visual Hierarchy (is the hero headline prominent?).
+        2. Evaluate the CTA Contrast and Placement.
+        3. Identify "Visual Friction" (is it cluttered? does it look dated?).
+        
+        Provide a concise visual audit in JSON format:
+        {
+          "visual_score": 0-100,
+          "visual_critique": "...",
+          "suggestions": ["suggestion 1", "suggestion 2"]
+        }
+        `;
+
+        try {
+            const runModel = (p: string, img?: number[]) => this.ai.run(model, {
+                prompt: p,
+                ...(img ? { image: img } : {})
+            });
+
+            try {
+                return await runModel(prompt, [...Uint8Array.from(atob(screenshotBase64), c => c.charCodeAt(0))]);
+            } catch (error: any) {
+                // Handle Meta License Agreement (Error 5016)
+                if (error.message?.includes("agree") || String(error).includes("agree")) {
+                    console.log("Accepting Llama 3.2 license...");
+                    await runModel("agree");
+                    // Retry original request
+                    return await runModel(prompt, [...Uint8Array.from(atob(screenshotBase64), c => c.charCodeAt(0))]);
+                }
+                throw error;
+            }
+        } catch (error) {
+            console.error("Vision AI Error:", error);
+            return {
+                visual_score: 50,
+                visual_critique: "Vision analysis failed due to high load or license requirements. Focusing on text-only metrics.",
+                suggestions: []
             };
         }
     }

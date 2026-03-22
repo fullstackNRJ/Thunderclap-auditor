@@ -20,6 +20,12 @@ export const UserUI = {
     SkeletonReport: () => {
         return (
             <div id="skeleton-report" class="hidden max-w-5xl mx-auto px-6 py-16 animate-pulse">
+                <div class="mb-12 text-center bg-blue-50 py-6 rounded-3xl border border-blue-100 shadow-sm shadow-blue-50">
+                    <p class="text-blue-600 font-black text-xl animate-bounce tracking-tight">
+                        Analyzing messaging psychology... <span class="text-blue-400 font-bold text-sm block md:inline md:ml-2">(This usually takes 30-45 seconds)</span>
+                    </p>
+                </div>
+
                 {/* Header Skeleton */}
                 <div class="mb-16 pb-12 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-8">
                     <div class="flex-1">
@@ -64,9 +70,6 @@ export const UserUI = {
                     ))}
                 </div>
 
-                <div class="mt-12 text-center">
-                    <p class="text-blue-600 font-bold animate-bounce">Analyzing messaging psychology... This usually takes 30-45 seconds.</p>
-                </div>
             </div>
         );
     },
@@ -83,11 +86,14 @@ export const UserUI = {
                     <form id="audit-form" action="/audit" method="post" class="w-full max-w-lg bg-white p-8 rounded-2xl shadow-xl border border-gray-100 h-64 flex flex-col justify-between">
                         <div>
                             <label for="url" class="block text-sm font-semibold text-gray-700 mb-2">Website URL</label>
-                            <input type="url" id="url" name="url" placeholder="https://yourwebsite.com" required
-                                class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none" />
+                            <div class="relative flex items-center">
+                                <span class="absolute left-4 text-gray-400 font-bold pointer-events-none">https://</span>
+                                <input type="text" id="url" name="url" placeholder="example.com" required
+                                    class="w-full pl-[4.5rem] pr-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none font-medium" />
+                            </div>
                         </div>
-                        <button type="submit" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-colors shadow-lg shadow-blue-200">
-                            Run Audit
+                        <button type="submit" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-colors shadow-lg shadow-blue-200 flex items-center justify-center gap-2 text-lg">
+                            Start Audit
                         </button>
                     </form>
                 </div>
@@ -96,20 +102,40 @@ export const UserUI = {
 
                 <script dangerouslySetInnerHTML={{
                     __html: `
+                    const urlInput = document.getElementById('url');
+                    
+                    // Trim prefix if user pastes/types it
+                    urlInput.addEventListener('input', (e) => {
+                        let val = e.target.value.trim();
+                        if (val.startsWith('https://')) {
+                            e.target.value = val.replace('https://', '');
+                        } else if (val.startsWith('http://')) {
+                            e.target.value = val.replace('http://', '');
+                        }
+                    });
+
                     document.getElementById('audit-form').addEventListener('submit', async (e) => {
                         e.preventDefault();
                         const form = e.target;
-                        const btn = document.getElementById('submit-btn');
-                        const url = form.action;
-                        const formData = new FormData(form);
+                        let urlValue = urlInput.value.trim();
+
+                        // Ensure we have a valid URL for the backend
+                        if (urlValue && !urlValue.startsWith('http')) {
+                            urlValue = 'https://' + urlValue;
+                        }
+
+                        const formData = new FormData();
+                        formData.append('url', urlValue);
 
                         // UI Transition
                         document.getElementById('landing-content').classList.add('hidden');
                         document.getElementById('skeleton-report').classList.remove('hidden');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
 
+                        const targetUrl = form.action;
+
                         try {
-                            const response = await fetch(url, {
+                            const response = await fetch(targetUrl, {
                                 method: 'POST',
                                 body: formData,
                                 headers: { 'Accept': 'application/json' }
@@ -306,6 +332,23 @@ export const UserUI = {
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                            {/* Visual Evidence (New) */}
+                            {report.screenshot && (
+                                <div class="col-span-1 md:col-span-2 bg-white rounded-[2rem] border-2 border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                    <div class="bg-gray-50 px-8 py-4 border-b border-gray-100 flex justify-between items-center">
+                                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Visual Evidence <span class="text-gray-400 font-medium">/ Captured via Browser Rendering</span></p>
+                                        <span class="px-3 py-1 bg-blue-100 text-blue-700 text-[10px] font-black uppercase rounded-full">Llama 3.2 Vision Enabled</span>
+                                    </div>
+                                    <div class="p-6">
+                                        <img
+                                            src={`data:image/jpeg;base64,${report.screenshot}`}
+                                            alt="Landing Page Screenshot"
+                                            class="w-full h-auto rounded-2xl border border-gray-100 shadow-xl"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
                             <div class="space-y-12">
                                 <div>
                                     <h3 class="text-xs font-black text-gray-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-4">
